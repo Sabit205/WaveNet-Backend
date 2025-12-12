@@ -23,6 +23,10 @@ router.post('/sync', requireAuth, async (req, res) => {
                 imageUrl
             });
         }
+
+        // Populate friends before returning
+        await user.populate('friends', 'clerkId fullName imageUrl email');
+
         res.json(user);
     } catch (err) {
         console.error(err);
