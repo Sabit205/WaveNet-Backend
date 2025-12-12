@@ -10,6 +10,7 @@ module.exports = (io) => {
         // User comes online
         socket.on('user-online', ({ userId, userInfo }) => {
             onlineUsers.set(userId, { socketId: socket.id, userInfo });
+            socket.join(userId); // Join room with their Clerk ID
 
             // Broadcast presence - In a real friend system, we might limit this to friends only.
             // For now, keeping global presence or the frontend can filter friends.

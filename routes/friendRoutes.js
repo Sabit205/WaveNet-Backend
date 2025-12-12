@@ -38,17 +38,50 @@ router.post('/request', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'Already friends' });
         }
 
-        const existingRequest = await FriendRequest.findOne({
-            sender: sender._id,
-            receiver: receiver._id
-        });
+        if (existingRequest) {
+            if (existingRequest.status === 'pending') {
+                return res.status(400).json({ error: 'Request already sent' });
+            } else if (existingRequest.status === 'rejected') {
+                existingRequest.status = 'pending';
+                await existingRequest.save();
 
-        if (existingRequest) return res.status(400).json({ error: 'Request already sent' });
+                // Get receiver socket
+                const receiverUser = await User.findById(receiver._id);
+                // We need to query the socket map which is in socketHandler. 
+                // Alternatively, just emit to all (room = user.clerkId) if we joined rooms.
+                // Since we didn't implement rooms, we can't easily emit to specific user from HTTP context without shared state.
+                // WORKAROUND: For now, we will just rely on Polling or emit a global event and filter on frontend? No, security risk.
+                // BETTER: Make users join a room with their ClerkID on connection.
+
+                // Let's implement ROOMS in socketHandler first.
+                // Assuming we fix socketHandler to join(userId), we can:
+                // req.io.to(receiverUser.clerkId).emit('friend-request-received', existingRequest);
+
+                // Since we haven't done rooms:
+                // Let's return the request and frontend of SENDER emits the notification? 
+                // No, sender shouldn't control receiver's UI.
+
+                // Best approach: Add global 'onlineUsers' map export or use IO rooms.
+                // Let's assume we will switch to Rooms in socketHandler.
+
+                return res.json(existingRequest);
+            } else if (existingRequest.status === 'accepted') {
+                return res.status(400).json({ error: 'Already friends' });
+            }
+        }
 
         const request = await FriendRequest.create({
             sender: sender._id,
             receiver: receiver._id
         });
+
+        // Populate sender details for the notification
+        await request.populate('sender', 'clerkId fullName imageUrl email');
+
+        // Emit event - PRE-REQUISITE: Users must join their own ID room
+        req.io.to(receiver.clerkId).emit('friend-request-received', request);
+
+        res.json(request);
 
         res.json(request);
     } catch (err) {
@@ -77,6 +110,12 @@ router.post('/accept', requireAuth, async (req, res) => {
         // Update Friends Lists
         await User.findByIdAndUpdate(request.sender, { $addToSet: { friends: request.receiver } });
         await User.findByIdAndUpdate(request.receiver, { $addToSet: { friends: request.sender } });
+
+        // Optimize: Populate sender (current user) info to send to the requester (new friend)
+        const receiverUser = await User.findById(currentUser._id).select('clerkId fullName imageUrl email');
+        const senderUser = await User.findById(request.sender); // The one who sent the request
+
+        req.io.to(senderUser.clerkId).emit('friend-request-accepted', { friend: receiverUser });
 
         res.json({ message: 'Friend accepted' });
     } catch (err) {

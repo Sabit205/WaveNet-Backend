@@ -33,6 +33,12 @@ const connectDB = async () => {
 connectDB();
 
 // Routes
+// Pass io to routes that need it
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
 const callRoutes = require('./routes/callRoutes');
 const userRoutes = require('./routes/userRoutes');
 const friendRoutes = require('./routes/friendRoutes');
