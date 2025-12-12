@@ -38,6 +38,11 @@ router.post('/request', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'Already friends' });
         }
 
+        const existingRequest = await FriendRequest.findOne({
+            sender: sender._id,
+            receiver: receiver._id
+        });
+
         if (existingRequest) {
             if (existingRequest.status === 'pending') {
                 return res.status(400).json({ error: 'Request already sent' });
