@@ -1,4 +1,5 @@
 const CallLog = require('../models/CallLog');
+const Message = require('../models/Message');
 
 const onlineUsers = new Map(); // userId -> socketId
 
@@ -10,7 +11,8 @@ module.exports = (io) => {
         socket.on('user-online', ({ userId, userInfo }) => {
             onlineUsers.set(userId, { socketId: socket.id, userInfo });
 
-            // Convert map to array of objects for frontend
+            // Broadcast presence - In a real friend system, we might limit this to friends only.
+            // For now, keeping global presence or the frontend can filter friends.
             const usersList = Array.from(onlineUsers.entries()).map(([id, data]) => ({
                 userId: id,
                 userInfo: data.userInfo
@@ -19,6 +21,72 @@ module.exports = (io) => {
             io.emit('online-users', usersList);
             console.log(`User ${userId} is online`);
         });
+
+        // --- CHAT EVENTS ---
+
+        // Send Message
+        socket.on('send-message', async ({ senderId, receiverId, content, type = 'text' }) => {
+            try {
+                // Save to DB
+                const message = await Message.create({
+                    senderId,
+                    receiverId,
+                    content,
+                    type
+                });
+
+                // Send to receiver if online
+                const receiverData = onlineUsers.get(receiverId);
+                if (receiverData?.socketId) {
+                    io.to(receiverData.socketId).emit('new-message', message);
+                }
+
+                // Send back to sender (to confirm save & timestamps)
+                socket.emit('message-sent', message);
+
+            } catch (err) {
+                console.error('Error sending message:', err);
+            }
+        });
+
+        // Typing Indicators
+        socket.on('typing', ({ senderId, receiverId }) => {
+            const receiverData = onlineUsers.get(receiverId);
+            if (receiverData?.socketId) {
+                io.to(receiverData.socketId).emit('typing', { senderId });
+            }
+        });
+
+        socket.on('stop-typing', ({ senderId, receiverId }) => {
+            const receiverData = onlineUsers.get(receiverId);
+            if (receiverData?.socketId) {
+                io.to(receiverData.socketId).emit('stop-typing', { senderId });
+            }
+        });
+
+        // Read Receipts
+        socket.on('mark-read', async ({ senderId, receiverId }) => {
+            // senderId here is the person who Sent the message (the other person)
+            // receiverId is the current user (who read it)
+            // We want to mark all messages FROM senderId TO receiverId as read.
+            try {
+                await Message.updateMany(
+                    { senderId: senderId, receiverId: receiverId, isRead: false },
+                    { isRead: true }
+                );
+
+                // Notify the sender that their messages were read
+                const senderData = onlineUsers.get(senderId);
+                if (senderData?.socketId) {
+                    io.to(senderData.socketId).emit('messages-read', { byUserId: receiverId });
+                }
+            } catch (err) {
+                console.error("Error marking read:", err);
+            }
+        });
+
+
+        // --- CALL EVENTS ---
 
         // Initiate Call
         socket.on('call-user', ({ callerId, receiverId, callType, callerName, callerAvatar }) => {
