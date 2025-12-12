@@ -7,9 +7,16 @@ module.exports = (io) => {
         console.log('New socket connection:', socket.id);
 
         // User comes online
-        socket.on('user-online', (userId) => {
-            onlineUsers.set(userId, socket.id);
-            io.emit('online-users', Array.from(onlineUsers.keys()));
+        socket.on('user-online', ({ userId, userInfo }) => {
+            onlineUsers.set(userId, { socketId: socket.id, userInfo });
+
+            // Convert map to array of objects for frontend
+            const usersList = Array.from(onlineUsers.entries()).map(([id, data]) => ({
+                userId: id,
+                userInfo: data.userInfo
+            }));
+
+            io.emit('online-users', usersList);
             console.log(`User ${userId} is online`);
         });
 
