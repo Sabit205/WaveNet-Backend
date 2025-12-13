@@ -43,11 +43,13 @@ const callRoutes = require('./routes/callRoutes');
 const userRoutes = require('./routes/userRoutes');
 const friendRoutes = require('./routes/friendRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const cloudinaryRoutes = require('./routes/cloudinaryRoutes');
 
 app.use('/api/calls', callRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/upload', cloudinaryRoutes);
 
 // Socket.io Logic
 require('./socket/socketHandler')(io);
