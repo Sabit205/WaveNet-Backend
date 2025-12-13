@@ -87,8 +87,6 @@ router.post('/request', requireAuth, async (req, res) => {
         req.io.to(receiver.clerkId).emit('friend-request-received', request);
 
         res.json(request);
-
-        res.json(request);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
