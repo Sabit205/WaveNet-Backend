@@ -26,14 +26,18 @@ module.exports = (io) => {
         // --- CHAT EVENTS ---
 
         // Send Message
-        socket.on('send-message', async ({ senderId, receiverId, content, type = 'text' }) => {
+        socket.on('send-message', async ({ senderId, receiverId, content, type = 'text', fileUrl, fileName, fileSize, mimeType }) => {
             try {
                 // Save to DB
                 const message = await Message.create({
                     senderId,
                     receiverId,
                     content,
-                    type
+                    type,
+                    fileUrl,
+                    fileName,
+                    fileSize,
+                    mimeType
                 });
 
                 // Send to receiver if online
