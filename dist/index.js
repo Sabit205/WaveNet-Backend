@@ -14,12 +14,18 @@ dotenv_1.default.config();
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
 // Middleware
+// Middleware
 app.use((0, cors_1.default)({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
-    credentials: true
+    origin: process.env.CLIENT_URL || '*', // Fallback to * for debugging
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
+// Health Check
+app.get('/', (req, res) => {
+    res.send('WaveNet Server is running');
+});
 // Database
 (0, db_1.connectDB)();
 // Socket.IO
