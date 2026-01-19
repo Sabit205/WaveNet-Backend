@@ -9,7 +9,8 @@ export const initSocket = (server: http.Server) => {
             origin: process.env.CLIENT_URL || '*',
             methods: ['GET', 'POST'],
             credentials: true
-        }
+        },
+        path: '/socket.io'
     });
 
     io.on('connection', (socket) => {

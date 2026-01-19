@@ -14,12 +14,18 @@ const server = http.createServer(app);
 // Middleware
 // Middleware
 app.use(cors({
-    origin: process.env.CLIENT_URL || '*', // Fallback to * for debugging
+    origin: process.env.CLIENT_URL || '*',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
 app.use(express.json());
 app.use(cookieParser());
+
+// Debug Middleware: Log all requests
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
 
 // Health Check
 app.get('/', (req, res) => {
@@ -30,7 +36,13 @@ app.get('/', (req, res) => {
 connectDB();
 
 // Socket.IO
-initSocket(server);
+console.log('Initializing Socket.IO...');
+try {
+    initSocket(server);
+    console.log('Socket.IO initialized successfully');
+} catch (error) {
+    console.error('Failed to initialize Socket.IO:', error);
+}
 
 import authRoutes from './routes/auth.routes';
 import conversationRoutes from './routes/conversation.routes';
