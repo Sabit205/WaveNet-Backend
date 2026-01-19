@@ -65,12 +65,14 @@ export const initSocket = (server: http.Server) => {
 
         socket.on('markMessagesSeen', async ({ conversationId, userId }) => {
             try {
+                const user = await require('./models/User').User.findOne({ clerkId: userId });
+                if (!user) return;
+
                 await require('./models/Message').Message.updateMany(
-                    { conversationId, sender: { $ne: userId }, seen: false },
-                    { $set: { seen: true } }
+                    { conversationId, sender: { $ne: user._id }, seenBy: { $ne: user._id } },
+                    { $addToSet: { seenBy: user._id } }
                 );
-                // Also update the conversation's lastMessage if it matches?
-                // For now, just broadcast so clients update their UI
+
                 io.to(conversationId).emit('messagesSeen', { conversationId });
             } catch (error) {
                 console.error('Error marking messages seen:', error);

@@ -56,6 +56,24 @@ const initSocket = (server) => {
                 }
             }
         }));
+        socket.on('typing', (conversationId) => {
+            socket.in(conversationId).emit('typing', conversationId);
+        });
+        socket.on('stopTyping', (conversationId) => {
+            socket.in(conversationId).emit('stopTyping', conversationId);
+        });
+        socket.on('markMessagesSeen', (_a) => __awaiter(void 0, [_a], void 0, function* ({ conversationId, userId }) {
+            try {
+                const user = yield require('./models/User').User.findOne({ clerkId: userId });
+                if (!user)
+                    return;
+                yield require('./models/Message').Message.updateMany({ conversationId, sender: { $ne: user._id }, seenBy: { $ne: user._id } }, { $addToSet: { seenBy: user._id } });
+                io.to(conversationId).emit('messagesSeen', { conversationId });
+            }
+            catch (error) {
+                console.error('Error marking messages seen:', error);
+            }
+        }));
     });
     return io;
 };
