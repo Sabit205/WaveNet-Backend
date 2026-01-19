@@ -37,7 +37,7 @@ const sendMessage = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         yield Conversation_1.Conversation.findByIdAndUpdate(conversationId, {
             lastMessage: newMessage._id,
         });
-        const populatedMessage = yield Message_1.Message.findById(newMessage._id).populate('sender', 'username image');
+        const populatedMessage = yield Message_1.Message.findById(newMessage._id).populate('sender', 'username image clerkId');
         // Emit socket event
         io.to(conversationId).emit('newMessage', populatedMessage);
         res.status(201).json(populatedMessage);
@@ -52,7 +52,7 @@ const getMessages = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     try {
         const { conversationId } = req.params;
         const messages = yield Message_1.Message.find({ conversationId })
-            .populate('sender', 'username image')
+            .populate('sender', 'username image clerkId')
             .sort({ createdAt: 1 });
         res.status(200).json(messages);
     }

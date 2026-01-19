@@ -30,7 +30,7 @@ export const sendMessage = async (req: Request, res: Response) => {
             lastMessage: newMessage._id,
         });
 
-        const populatedMessage = await Message.findById(newMessage._id).populate('sender', 'username image');
+        const populatedMessage = await Message.findById(newMessage._id).populate('sender', 'username image clerkId');
 
         // Emit socket event
         io.to(conversationId).emit('newMessage', populatedMessage);
@@ -47,7 +47,7 @@ export const getMessages = async (req: Request, res: Response) => {
         const { conversationId } = req.params;
 
         const messages = await Message.find({ conversationId })
-            .populate('sender', 'username image')
+            .populate('sender', 'username image clerkId')
             .sort({ createdAt: 1 });
 
         res.status(200).json(messages);
