@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserConversations = exports.createConversation = void 0;
+exports.getConversationById = exports.getUserConversations = exports.createConversation = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const Conversation_1 = require("../models/Conversation");
 const User_1 = require("../models/User");
@@ -79,3 +79,21 @@ const getUserConversations = (req, res) => __awaiter(void 0, void 0, void 0, fun
     }
 });
 exports.getUserConversations = getUserConversations;
+// Get single conversation by ID
+const getConversationById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { conversationId } = req.params;
+        const conversation = yield Conversation_1.Conversation.findById(conversationId)
+            .populate('participants', 'username image email clerkId online lastSeen')
+            .populate('lastMessage');
+        if (!conversation) {
+            return res.status(404).json({ message: 'Conversation not found' });
+        }
+        res.status(200).json(conversation);
+    }
+    catch (error) {
+        console.error('Error fetching conversation:', error.message);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+exports.getConversationById = getConversationById;

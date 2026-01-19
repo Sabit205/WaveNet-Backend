@@ -8,4 +8,5 @@ const conversation_controller_1 = require("../controllers/conversation.controlle
 const router = express_1.default.Router();
 router.post('/', conversation_controller_1.createConversation);
 router.get('/:userId', conversation_controller_1.getUserConversations);
+router.get('/detail/:conversationId', conversation_controller_1.getConversationById);
 exports.default = router;

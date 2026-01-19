@@ -2,6 +2,7 @@ import { Server } from 'socket.io';
 import http from 'http';
 
 let io: Server;
+const onlineUsers = new Map<string, string>(); // socketId -> clerkId
 
 export const initSocket = (server: http.Server) => {
     io = new Server(server, {
@@ -18,6 +19,7 @@ export const initSocket = (server: http.Server) => {
         socket.on('setup', async (userData: any) => {
             if (userData?.id) { // This is Clerk ID
                 socket.join(userData.id);
+                onlineUsers.set(socket.id, userData.id);
                 console.log(`User ${userData.id} setup`);
                 try {
                     // Update user online status
@@ -39,10 +41,19 @@ export const initSocket = (server: http.Server) => {
 
         socket.on('disconnect', async () => {
             console.log('User disconnected:', socket.id);
-            // We need to know WHICH user disconnected. 
-            // In a real app we'd map socketId -> userId.
-            // For now, this is a limitation unless we store it.
-            // TODO: Add socketId -> userId mapping for robust offline status.
+            const userId = onlineUsers.get(socket.id);
+            if (userId) {
+                try {
+                    await require('./models/User').User.findOneAndUpdate(
+                        { clerkId: userId },
+                        { online: false }
+                    );
+                    socket.broadcast.emit('userOffline', userId);
+                    onlineUsers.delete(socket.id);
+                } catch (err) {
+                    console.error('Error updating offline status:', err);
+                }
+            }
         });
     });
 

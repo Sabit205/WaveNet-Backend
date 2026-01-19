@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getIO = exports.initSocket = void 0;
 const socket_io_1 = require("socket.io");
 let io;
+const onlineUsers = new Map(); // socketId -> clerkId
 const initSocket = (server) => {
     io = new socket_io_1.Server(server, {
         cors: {
@@ -25,6 +26,7 @@ const initSocket = (server) => {
         socket.on('setup', (userData) => __awaiter(void 0, void 0, void 0, function* () {
             if (userData === null || userData === void 0 ? void 0 : userData.id) { // This is Clerk ID
                 socket.join(userData.id);
+                onlineUsers.set(socket.id, userData.id);
                 console.log(`User ${userData.id} setup`);
                 try {
                     // Update user online status
@@ -42,10 +44,17 @@ const initSocket = (server) => {
         });
         socket.on('disconnect', () => __awaiter(void 0, void 0, void 0, function* () {
             console.log('User disconnected:', socket.id);
-            // We need to know WHICH user disconnected. 
-            // In a real app we'd map socketId -> userId.
-            // For now, this is a limitation unless we store it.
-            // TODO: Add socketId -> userId mapping for robust offline status.
+            const userId = onlineUsers.get(socket.id);
+            if (userId) {
+                try {
+                    yield require('./models/User').User.findOneAndUpdate({ clerkId: userId }, { online: false });
+                    socket.broadcast.emit('userOffline', userId);
+                    onlineUsers.delete(socket.id);
+                }
+                catch (err) {
+                    console.error('Error updating offline status:', err);
+                }
+            }
         }));
     });
     return io;
