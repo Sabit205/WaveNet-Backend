@@ -17,8 +17,11 @@ export const syncUser = async (req: Request, res: Response) => {
         let evt: any;
 
         try {
-            evt = wh.verify(JSON.stringify(payload), heads);
+            console.log('Verifying webhook signature...');
+            evt = wh.verify((req as any).rawBody, heads);
+            console.log('Webhook signature verified');
         } catch (err) {
+            console.error('Webhook verification failed:', err);
             return res.status(400).json({ message: "Webhook verification failed" });
         }
 

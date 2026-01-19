@@ -35,9 +35,12 @@ const syncUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const wh = new svix_1.Webhook(process.env.CLERK_WEBHOOK_SECRET || "");
         let evt;
         try {
-            evt = wh.verify(JSON.stringify(payload), heads);
+            console.log('Verifying webhook signature...');
+            evt = wh.verify(req.rawBody, heads);
+            console.log('Webhook signature verified');
         }
         catch (err) {
+            console.error('Webhook verification failed:', err);
             return res.status(400).json({ message: "Webhook verification failed" });
         }
         const _a = evt.data, { id } = _a, attributes = __rest(_a, ["id"]);

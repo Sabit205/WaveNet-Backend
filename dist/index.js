@@ -20,7 +20,11 @@ app.use((0, cors_1.default)({
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
-app.use(express_1.default.json());
+app.use(express_1.default.json({
+    verify: (req, res, buf) => {
+        req.rawBody = buf.toString();
+    }
+}));
 app.use((0, cookie_parser_1.default)());
 // Debug Middleware: Log all requests
 app.use((req, res, next) => {

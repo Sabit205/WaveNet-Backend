@@ -18,7 +18,11 @@ app.use(cors({
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
-app.use(express.json());
+app.use(express.json({
+    verify: (req: any, res, buf) => {
+        req.rawBody = buf.toString();
+    }
+}));
 app.use(cookieParser());
 
 // Debug Middleware: Log all requests
