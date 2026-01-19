@@ -55,6 +55,28 @@ export const initSocket = (server: http.Server) => {
                 }
             }
         });
+        socket.on('typing', (conversationId) => {
+            socket.in(conversationId).emit('typing', conversationId);
+        });
+
+        socket.on('stopTyping', (conversationId) => {
+            socket.in(conversationId).emit('stopTyping', conversationId);
+        });
+
+        socket.on('markMessagesSeen', async ({ conversationId, userId }) => {
+            try {
+                await require('./models/Message').Message.updateMany(
+                    { conversationId, sender: { $ne: userId }, seen: false },
+                    { $set: { seen: true } }
+                );
+                // Also update the conversation's lastMessage if it matches?
+                // For now, just broadcast so clients update their UI
+                io.to(conversationId).emit('messagesSeen', { conversationId });
+            } catch (error) {
+                console.error('Error marking messages seen:', error);
+            }
+        });
+
     });
 
     return io;
