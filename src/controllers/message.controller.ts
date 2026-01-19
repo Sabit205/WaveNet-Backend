@@ -26,14 +26,20 @@ export const sendMessage = async (req: Request, res: Response) => {
         });
 
         // Update conversation last message
-        await Conversation.findByIdAndUpdate(conversationId, {
+        const conversation = await Conversation.findByIdAndUpdate(conversationId, {
             lastMessage: newMessage._id,
-        });
+        }, { new: true }).populate('participants');
 
         const populatedMessage = await Message.findById(newMessage._id).populate('sender', 'username image clerkId');
 
-        // Emit socket event
-        io.to(conversationId).emit('newMessage', populatedMessage);
+        // Emit socket event to each participant's user room
+        if (conversation && conversation.participants) {
+            conversation.participants.forEach((participant: any) => {
+                if (participant.clerkId) {
+                    io.to(participant.clerkId).emit('newMessage', populatedMessage);
+                }
+            });
+        }
 
         res.status(201).json(populatedMessage);
     } catch (error: any) {
