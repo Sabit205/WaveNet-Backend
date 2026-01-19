@@ -16,12 +16,17 @@ const server = http_1.default.createServer(app);
 // Middleware
 // Middleware
 app.use((0, cors_1.default)({
-    origin: process.env.CLIENT_URL || '*', // Fallback to * for debugging
+    origin: process.env.CLIENT_URL || '*',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
+// Debug Middleware: Log all requests
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
 // Health Check
 app.get('/', (req, res) => {
     res.send('WaveNet Server is running');
@@ -29,7 +34,14 @@ app.get('/', (req, res) => {
 // Database
 (0, db_1.connectDB)();
 // Socket.IO
-(0, socket_1.initSocket)(server);
+console.log('Initializing Socket.IO...');
+try {
+    (0, socket_1.initSocket)(server);
+    console.log('Socket.IO initialized successfully');
+}
+catch (error) {
+    console.error('Failed to initialize Socket.IO:', error);
+}
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const conversation_routes_1 = __importDefault(require("./routes/conversation.routes"));
 const message_routes_1 = __importDefault(require("./routes/message.routes"));
