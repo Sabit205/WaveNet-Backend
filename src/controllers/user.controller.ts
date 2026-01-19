@@ -3,18 +3,24 @@ import { User } from '../models/User';
 
 export const searchUsers = async (req: Request, res: Response) => {
     try {
-        const { q } = req.query;
+        const { q, exclude } = req.query;
 
         if (!q) {
             return res.status(400).json({ message: 'Search query is required' });
         }
 
-        const users = await User.find({
+        const query: any = {
             $or: [
                 { username: { $regex: q, $options: 'i' } },
                 { email: { $regex: q, $options: 'i' } }
             ]
-        } as any).select('username email image clerkId online lastSeen');
+        };
+
+        if (exclude) {
+            query.clerkId = { $ne: exclude };
+        }
+
+        const users = await User.find(query).select('username email image clerkId online lastSeen');
 
         res.status(200).json(users);
     } catch (error: any) {

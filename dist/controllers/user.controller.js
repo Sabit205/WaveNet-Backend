@@ -13,16 +13,20 @@ exports.searchUsers = void 0;
 const User_1 = require("../models/User");
 const searchUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { q } = req.query;
+        const { q, exclude } = req.query;
         if (!q) {
             return res.status(400).json({ message: 'Search query is required' });
         }
-        const users = yield User_1.User.find({
+        const query = {
             $or: [
                 { username: { $regex: q, $options: 'i' } },
                 { email: { $regex: q, $options: 'i' } }
             ]
-        }).select('username email image clerkId online lastSeen');
+        };
+        if (exclude) {
+            query.clerkId = { $ne: exclude };
+        }
+        const users = yield User_1.User.find(query).select('username email image clerkId online lastSeen');
         res.status(200).json(users);
     }
     catch (error) {
