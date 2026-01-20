@@ -33,16 +33,30 @@ export const syncUser = async (req: Request, res: Response) => {
             const email = email_addresses[0].email_address;
             const name = username || `${first_name} ${last_name}`;
 
-            await User.findOneAndUpdate(
-                { clerkId: id },
-                {
+            // Try to find user by clerkId or email
+            let user = await User.findOne({
+                $or: [
+                    { clerkId: id },
+                    { email: email }
+                ]
+            });
+
+            if (user) {
+                // Update existing user
+                user.clerkId = id; // Ensure clerkId is set
+                user.email = email;
+                user.username = name;
+                user.image = image_url;
+                await user.save();
+            } else {
+                // Create new user
+                await User.create({
                     clerkId: id,
                     email,
                     username: name,
                     image: image_url,
-                },
-                { upsert: true, new: true }
-            );
+                });
+            }
         }
 
         if (eventType === 'user.deleted') {
